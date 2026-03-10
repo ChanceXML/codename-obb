@@ -1,102 +1,59 @@
 package mobile;
 
 import flixel.FlxG;
-import flixel.system.FlxPlugin;
+import flixel.FlxState;
 import flixel.FlxSprite;
-import flixel.math.FlxMath;
-import flixel.input.touch.FlxTouch;
+import flixel.util.FlxPoint;
 
-class MobileMouse extends FlxPlugin
+class MobileMouseOverlay extends FlxSprite
 {
-    var cursor:FlxSprite;
-
-    var lastX:Float = 0;
-    var lastY:Float = 0;
-    var dragging:Bool = false;
-
-    var sensitivity:Float = 1.2;
+    var isDragging:Bool = false;
+    var lastTouch:FlxPoint = new FlxPoint();
 
     public function new()
     {
         super();
-
-        cursor = new FlxSprite();
-        cursor.loadGraphic("assets/images/game/mouse/cursor.png");
-        cursor.scrollFactor.set();
-
-        cursor.x = FlxG.width / 2;
-        cursor.y = FlxG.height / 2;
-
-        FlxG.mouse.visible = false;
+        loadGraphic("assets/images/game/mouse/cursor.png");
+        scrollFactor.set();
+        width = 44;
+        height = 44;
+        offset.set(0, 0);
+        FlxG.signals.onStateSwitch.add(() -> if (FlxG.state != null && !FlxG.state.members.contains(this)) FlxG.state.add(this));
+        if (FlxG.state != null) FlxG.state.add(this);
     }
 
-    override public function update(elapsed:Float)
+    override public function update(elapsed:Float):Void
     {
         super.update(elapsed);
-
-        if (FlxG.state != null && !FlxG.state.members.contains(cursor))
+        var touch = FlxG.touches.list.length > 0 ? FlxG.touches.list[0] : null;
+        if (touch != null)
         {
-            FlxG.state.add(cursor);
+            if (isDragging)
+            {
+                x += touch.screenX - lastTouch.x;
+                y += touch.screenY - lastTouch.y;
+            }
+            else
+            {
+                x = touch.screenX;
+                y = touch.screenY;
+            }
+            lastTouch.set(touch.screenX, touch.screenY);
         }
-
-        if (FlxG.touches.list.length > 0)
-        {
-            var touch:FlxTouch = FlxG.touches.list[0];
-
-            if (touch.justPressed)
-            {
-                lastX = touch.screenX;
-                lastY = touch.screenY;
-                dragging = true;
-            }
-
-            if (dragging)
-            {
-                var dx = touch.screenX - lastX;
-                var dy = touch.screenY - lastY;
-
-                cursor.x += dx * sensitivity;
-                cursor.y += dy * sensitivity;
-
-                lastX = touch.screenX;
-                lastY = touch.screenY;
-            }
-
-            if (touch.justReleased)
-            {
-                dragging = false;
-            }
-        }
-
-        cursor.x = FlxMath.bound(cursor.x, 0, FlxG.width - cursor.width);
-        cursor.y = FlxMath.bound(cursor.y, 0, FlxG.height - cursor.height);
-
-        updateCursor();
+        if (FlxG.mouse.justPressed() || (touch != null && touch.justPressed))
+            loadGraphic("assets/images/game/mouse/click.png");
+        else
+            loadGraphic("assets/images/game/mouse/cursor.png");
+        isDragging = FlxG.mouse.pressed() || (touch != null && touch.pressed);
     }
 
-    function updateCursor()
+    public static var instance:MobileMouseOverlay;
+
+    public static function init():Void
     {
-        var hovering:Bool = false;
-
-        for (obj in FlxG.state.members)
+        if (instance == null)
         {
-            if (obj != null && obj.exists && obj.visible)
-            {
-                if (Std.isOfType(obj, flixel.ui.FlxButton))
-                {
-                    var btn:flixel.ui.FlxButton = cast obj;
-                    if (cursor.overlaps(btn))
-                    {
-                        hovering = true;
-                        break;
-                    }
-                }
-            }
+            instance = new MobileMouseOverlay();
         }
-
-        if (hovering)
-            cursor.loadGraphic("assets/images/game/mouse/click.png");
-        else
-            cursor.loadGraphic("assets/images/game/mouse/cursor.png");
     }
 }
