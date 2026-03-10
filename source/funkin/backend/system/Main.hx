@@ -84,6 +84,10 @@ class Main extends Sprite
 
         Permissions.requestPermissions(permissions);
         #end
+
+		#if mobile
+        FlxG.plugins.add(new mobile.MobileMouse());
+        #end
 	 
 		CrashHandler.init();
 
