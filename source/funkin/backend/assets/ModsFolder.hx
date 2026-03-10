@@ -168,7 +168,7 @@ class ModsFolder {
 	private static function getDefaultModsPath():String {
     #if android
     var packageName = "com.yoshman29.codenameengine";
-    return "/storage/emulated/0/Android/obb/" + packageName + "/files/mods/";
+    return "/storage/emulated/0/Android/media/" + packageName + "/files/mods/";
     #else
     return "./mods/";
     #end
