@@ -71,6 +71,12 @@ class Main extends Sprite
 			
 		instance = this;
 
+		#if android
+        if (!Permissions.getGrantedPermissions().contains(Permissions.READ_EXTERNAL_STORAGE)) {
+        Permissions.requestPermissions([Permissions.READ_EXTERNAL_STORAGE, Permissions.WRITE_EXTERNAL_STORAGE]);
+        }
+        #end
+
 		CrashHandler.init();
 
 		addChild(game = new FunkinGame(gameWidth, gameHeight, MainState, Options.framerate, Options.framerate, skipSplash, startFullscreen));
