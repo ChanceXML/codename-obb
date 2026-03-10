@@ -72,22 +72,8 @@ class Main extends Sprite
 			
 		instance = this;
 
-        #if android
-        var permissions = [
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE"
-        ];
-
-        if (AndroidVersion.SDK_INT >= 30)
-        {
-        permissions.push("android.permission.MANAGE_EXTERNAL_STORAGE");
-        }
-
-        Permissions.requestPermissions(permissions);
-        #end
-	
-		#if mobile
-        MobileMouseOverlay.init();
+		#if android
+        MobilePermissions.request();
         #end
 	 
 		CrashHandler.init();
