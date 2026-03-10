@@ -75,16 +75,16 @@ class Main extends Sprite
         var permissions = [
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE"
-        ];
+         ];
 
-        if (Build.VERSION.SDK_INT >= 30)
+        if (Build.SDK_INT >= 30)
         {
         permissions.push("android.permission.MANAGE_EXTERNAL_STORAGE");
         }
 
         Permissions.requestPermissions(permissions);
         #end
-
+	
 		#if mobile
         FlxG.plugins.add(new mobile.MobileMouse());
         #end
