@@ -1,27 +1,32 @@
 package mobile.utils;
 
 #if android
-import extension.androidtools.os.Build.VERSION as AndroidVersion;
-import extension.androidtools.os.Build.VERSION_CODES as AndroidVersionCode;
-import extension.androidtools.os.Environment as AndroidEnvironment;
-import extension.androidtools.Settings as AndroidSettings;
-import extension.androidtools.Permissions as AndroidPermissions;
+import extension.androidtools.os.Build;
+import extension.androidtools.os.Build.VERSION_CODES;
+import extension.androidtools.Permissions;
+import extension.androidtools.os.Environment;
+import extension.androidtools.Settings;
 #end
 
-class AndroidHelper {
-
-    public static function request():Void {
-        #if android
-        if (AndroidVersion.SDK_INT >= AndroidVersionCode.R) {
-            if (!AndroidEnvironment.isExternalStorageManager()) {
-                AndroidSettings.requestSetting("MANAGE_APP_ALL_FILES_ACCESS_PERMISSION");
+class AndroidHelper
+{
+    #if android
+    public static function checkStoragePermission():Void
+    {
+        if (Build.SDK_INT >= VERSION_CODES.R)
+        {
+            if (!Environment.isExternalStorageManager())
+            {
+                Settings.requestSetting("MANAGE_APP_ALL_FILES_ACCESS_PERMISSION");
             }
-        } else {
-            AndroidPermissions.requestPermissions([
-                "android.permission.READ_EXTERNAL_STORAGE",
-                "android.permission.WRITE_EXTERNAL_STORAGE"
+        }
+        else
+        {
+            Permissions.requestPermissions([
+                Permissions.READ_EXTERNAL_STORAGE,
+                Permissions.WRITE_EXTERNAL_STORAGE
             ]);
         }
-        #end
     }
+    #end
 }
