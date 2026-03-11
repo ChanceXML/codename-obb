@@ -10,20 +10,19 @@ import lime.utils.AssetLibrary;
 import openfl.utils.Assets as OpenFlAssets;
 import animate.FlxAnimateFrames;
 
-#if sys
-import sys.FileSystem;
-#end
-
 using StringTools;
 
 class Paths
 {
-	public static var assetsTree:AssetsLibraryList;
-	public static var tempFramesCache:Map<String, FlxFramesCollection> = [];
-
 	#if android
-	public static final ANDROID_BASE:String = "/storage/emulated/0/Android/media/com.yoshman29.codenameengine/";
+	public static inline var BASE_DIR:String = "/storage/emulated/0/Android/media/com.yoshman29.codenameengine/files/assets/";
+	#else
+	public static inline var BASE_DIR:String = "assets/";
 	#end
+
+	public static var assetsTree:AssetsLibraryList;
+
+	public static var tempFramesCache:Map<String, FlxFramesCollection> = [];
 
 	public static function init() {
 		FlxG.signals.preStateSwitch.add(function() {
@@ -31,30 +30,40 @@ class Paths
 		});
 	}
 
-	public static function getPath(file:String, ?library:String)
-{
-    var relPath:String = library != null ? '$library:assets/$file' : 'assets/$file';
-
-    #if android
-    if (ModsFolder.currentModFolder != null)
-    {
-        var modPath = Path.normalize(
-            ModsFolder.getDefaultModsPath() +
-            ModsFolder.currentModFolder + "/" + file
-        );
-
-        if (FileSystem.exists(modPath))
-            return modPath;
-    }
-
-    var extPath = Path.normalize(ANDROID_BASE + "assets/" + file);
-
-    if (FileSystem.exists(extPath))
-        return extPath;
-    #end
-
-    return relPath;
-}
+	public static inline function getPath(file:String, ?library:String) {
+		var returnedPath:String = library != null ? '$library:$BASE_DIR$library/$file' : '$BASE_DIR$file';
+		
+		#if (sys && !windows)
+		returnedPath = Path.normalize(returnedPath);
+		if (OpenFlAssets.exists(returnedPath)) return returnedPath;
+		
+		var fixedPath:String = library != null ? '$library:$BASE_DIR$library/' : BASE_DIR;
+		
+		var relativePath:String = returnedPath.substr(fixedPath.length);
+		var parts:Array<String> = relativePath.split("/");
+		
+		for (it=>part in parts) {
+			if (part == "") continue;
+			
+			var entries:Array<String> = null;
+			if (Path.extension(part) == "") entries = assetsTree.getFolders(fixedPath);
+			else entries = assetsTree.getFiles(fixedPath);
+			
+			if (entries != null) {
+				for (entry in entries) {
+					if (entry.toLowerCase() == part.toLowerCase()) {
+						fixedPath += entry + (it != parts.length - 1 ? "/" : "");
+						break;
+					}
+				}
+			}
+		}
+		
+		if (returnedPath.toLowerCase() == fixedPath.toLowerCase()) returnedPath = fixedPath;
+		#end
+		
+		return returnedPath;
+	}
 
 	public static inline function video(key:String, ?ext:String)
 		return getPath('videos/$key.${ext != null ? ext : Flags.VIDEO_EXT}');
@@ -102,7 +111,6 @@ class Paths
 		if (difficulty == null) difficulty = Flags.DEFAULT_DIFFICULTY;
 		if (ext == null) ext = Flags.SOUND_EXT;
 		var diff = getPath('songs/$song/song/Voices$suffix-${difficulty}.${ext}', null);
-		if (FileSystem.exists(diff)) return diff;
 		return OpenFlAssets.exists(diff) ? diff : getPath('songs/$song/song/Voices$suffix.${ext}', null);
 	}
 
@@ -110,7 +118,6 @@ class Paths
 		if (difficulty == null) difficulty = Flags.DEFAULT_DIFFICULTY;
 		if (ext == null) ext = Flags.SOUND_EXT;
 		var diff = getPath('songs/$song/song/Inst$suffix-${difficulty}.${ext}', null);
-		if (FileSystem.exists(diff)) return diff;
 		return OpenFlAssets.exists(diff) ? diff : getPath('songs/$song/song/Inst$suffix.${ext}', null);
 	}
 
@@ -119,8 +126,6 @@ class Paths
 		if (checkForAtlas) {
 			var atlasPath = getPath('images/$key/spritemap.$ext', library);
 			var multiplePath = getPath('images/$key/1.$ext', library);
-			if (atlasPath != null && FileSystem.exists(atlasPath)) return atlasPath.substr(0, atlasPath.length - 14);
-			if (multiplePath != null && FileSystem.exists(multiplePath)) return multiplePath.substr(0, multiplePath.length - 6);
 			if (atlasPath != null && OpenFlAssets.exists(atlasPath)) return atlasPath.substr(0, atlasPath.length - 14);
 			if (multiplePath != null && OpenFlAssets.exists(multiplePath)) return multiplePath.substr(0, multiplePath.length - 6);
 		}
@@ -129,15 +134,11 @@ class Paths
 
 	public static inline function script(key:String, ?library:String, isAssetsPath:Bool = false) {
 		var scriptPath = isAssetsPath ? key : getPath(key, library);
-		#if android
-		if (!FileSystem.exists(scriptPath) && !OpenFlAssets.exists(scriptPath)) {
-		#else
 		if (!OpenFlAssets.exists(scriptPath)) {
-		#end
 			var p:String;
 			for(ex in Script.scriptExtensions) {
-				if (FileSystem.exists(scriptPath + '.' + ex) || OpenFlAssets.exists(p = scriptPath + '.' + ex)) {
-					scriptPath = scriptPath + '.' + ex;
+				if (OpenFlAssets.exists(p = scriptPath + '.' + ex)) {
+					scriptPath = p;
 					break;
 				}
 			}
@@ -148,6 +149,7 @@ class Paths
 	static public function chart(song:String, ?difficulty:String, ?variant:String):String
 	{
 		difficulty = (difficulty != null ? difficulty : Flags.DEFAULT_DIFFICULTY);
+
 		return getPath('songs/$song/charts/${variant != null ? variant + "/" : ""}$difficulty.json', null);
 	}
 
@@ -206,9 +208,9 @@ class Paths
 
 	inline static public function getAssetsRoot():String {
 		#if android
-		return ANDROID_BASE;
+		return ModsFolder.currentModFolder != null ? '${ModsFolder.modsPath}${ModsFolder.currentModFolder}' : BASE_DIR;
 		#else
-		return ModsFolder.currentModFolder != null ? '${ModsPath}${ModsFolder.currentModFolder}' : #if (sys && TEST_BUILD) './${Main.pathBack}assets/' #else './assets' #end;
+		return ModsFolder.currentModFolder != null ? '${ModsFolder.modsPath}${ModsFolder.currentModFolder}' : #if (sys && TEST_BUILD) './${Main.pathBack}$BASE_DIR' #else './$BASE_DIR' #end;
 		#end
 	}
 
@@ -226,130 +228,94 @@ class Paths
 	public static function framesExists(key:String, checkAtlas:Bool = false, checkMulti:Bool = true, assetsPath:Bool = false, ?library:String) {
 		var path = assetsPath ? key : Paths.image(key, library, true);
 		var noExt = Path.withoutExtension(path);
-		if(checkAtlas && FileSystem.exists('$noExt/Animation.json')) return true;
-		if(checkMulti && FileSystem.exists('$noExt/1.png')) return true;
-		if(FileSystem.exists('$noExt.xml') || FileSystem.exists('$noExt.txt') || FileSystem.exists('$noExt.json')) return true;
-		if(checkAtlas && OpenFlAssets.exists('$noExt/Animation.json')) return true;
-		if(checkMulti && OpenFlAssets.exists('$noExt/1.png')) return true;
-		if(OpenFlAssets.exists('$noExt.xml')) return true;
-		if(OpenFlAssets.exists('$noExt.txt')) return true;
-		if(OpenFlAssets.exists('$noExt.json')) return true;
+		if(checkAtlas && OpenFlAssets.exists('$noExt/Animation.json'))
+			return true;
+		if(checkMulti && OpenFlAssets.exists('$noExt/1.png'))
+			return true;
+		if(OpenFlAssets.exists('$noExt.xml'))
+			return true;
+		if(OpenFlAssets.exists('$noExt.txt'))
+			return true;
+		if(OpenFlAssets.exists('$noExt.json'))
+			return true;
 		return false;
 	}
 
 	static function loadFrames(path:String, Unique:Bool = false, Key:String = null, SkipAtlasCheck:Bool = false, SkipMultiCheck:Bool = false, ?Ext:String = null, ?animateSettings:FlxAnimateSettings):FlxFramesCollection {
 		var noExt = Path.withoutExtension(path);
 		var ext = Ext != null ? Ext : Flags.IMAGE_EXT;
-		var existsMulti = FileSystem.exists('$noExt/1.${ext}') || OpenFlAssets.exists('$noExt/1.${ext}');
-		var existsAnim = FileSystem.exists('$noExt/Animation.json') || OpenFlAssets.exists('$noExt/Animation.json');
-		var existsXml = FileSystem.exists('$noExt.xml') || OpenFlAssets.exists('$noExt.xml');
-		var existsTxt = FileSystem.exists('$noExt.txt') || OpenFlAssets.exists('$noExt.txt');
-		var existsJson = FileSystem.exists('$noExt.json') || OpenFlAssets.exists('$noExt.json');
 
-		if (!SkipMultiCheck && existsMulti) {
+		if (!SkipMultiCheck && OpenFlAssets.exists('$noExt/1.${ext}')) {
 			var graphic = FlxG.bitmap.add("flixel/images/logo/default.png", false, '$noExt/mult');
 			var frames = MultiFramesCollection.findFrame(graphic);
-			if (frames != null) return frames;
+			if (frames != null)
+				return frames;
+
 			var cur = 1;
 			var finalFrames = new MultiFramesCollection(graphic);
-			var loopExists = true;
-			while(loopExists) {
-				loopExists = FileSystem.exists('$noExt/$cur.${ext}') || OpenFlAssets.exists('$noExt/$cur.${ext}');
-				if(loopExists) {
-					finalFrames.addFrames(loadFrames('$noExt/$cur.${ext}', false, null, false, true));
-					cur++;
-				}
+			while(OpenFlAssets.exists('$noExt/$cur.${ext}')) {
+				var spr = loadFrames('$noExt/$cur.${ext}', false, null, false, true);
+				finalFrames.addFrames(spr);
+				cur++;
 			}
 			return finalFrames;
-		} else if (existsAnim) {
+		} else if (OpenFlAssets.exists('$noExt/Animation.json')) {
 			return Paths.getAnimateAtlasAlt(noExt, animateSettings);
-		} else if (existsXml) {
+		} else if (OpenFlAssets.exists('$noExt.xml')) {
 			return Paths.getSparrowAtlasAlt(noExt, ext);
-		} else if (existsTxt) {
+		} else if (OpenFlAssets.exists('$noExt.txt')) {
 			return Paths.getPackerAtlasAlt(noExt, ext);
-		} else if (existsJson) {
+		} else if (OpenFlAssets.exists('$noExt.json')) {
 			return Paths.getAsepriteAtlasAlt(noExt, ext);
 		}
+
 		var graph:FlxGraphic = FlxG.bitmap.add(path, Unique, Key);
-		if (graph == null) return null;
+		if (graph == null)
+			return null;
 		return graph.imageFrame;
 	}
 
 	public static function getFolderDirectories(key:String, addPath:Bool = false, source:AssetSource = BOTH):Array<String> {
 		if (!key.endsWith("/")) key += "/";
-		var content:Array<String> = [];
-		if (ModsFolder.currentModFolder != null) {
-			var modPath = Path.normalize(ModsFolder.getDefaultModsPath() + ModsFolder.currentModFolder + '/' + key);
-			if (FileSystem.exists(modPath) && FileSystem.isDirectory(modPath)) {
-				for (file in FileSystem.readDirectory(modPath)) {
-					if (FileSystem.isDirectory('$modPath$file') && !content.contains(file)) content.push(file);
-				}
-			}
-		}
-		var extPath = Path.normalize(ANDROID_BASE + 'assets/$key');
-		if (FileSystem.exists(extPath) && FileSystem.isDirectory(extPath)) {
-			for (file in FileSystem.readDirectory(extPath)) {
-				if (FileSystem.isDirectory('$extPath$file') && !content.contains(file)) content.push(file);
-			}
-		}
-
-		for (file in assetsTree.getFolders('assets/$key', source))
-{
-    if (!content.contains(file))
-        content.push(file);
-}
-		
+		var content = assetsTree.getFolders('$BASE_DIR$key', source);
 		if (addPath) {
-			for(k=>e in content) content[k] = '$key$e';
+			for(k=>e in content)
+				content[k] = '$key$e';
 		}
 		return content;
 	}
 
 	static public function getFolderContent(key:String, addPath:Bool = false, source:AssetSource = BOTH, noExtension:Bool = false):Array<String> {
 		if (!key.endsWith("/")) key += "/";
-		var content:Array<String> = [];
-		if (ModsFolder.currentModFolder != null) {
-			var modPath = Path.normalize(ModsFolder.getDefaultModsPath() + ModsFolder.currentModFolder + '/' + key);
-			if (FileSystem.exists(modPath) && FileSystem.isDirectory(modPath)) {
-				for (file in FileSystem.readDirectory(modPath)) {
-					if (!FileSystem.isDirectory('$modPath$file') && !content.contains(file)) content.push(file);
-				}
-			}
-		}
-		var extPath = Path.normalize(ANDROID_BASE + 'assets/$key');
-		if (FileSystem.exists(extPath) && FileSystem.isDirectory(extPath)) {
-			for (file in FileSystem.readDirectory(extPath)) {
-				if (!FileSystem.isDirectory('$extPath$file') && !content.contains(file)) content.push(file);
-			}
-		}
-
-		for (file in assetsTree.getFiles('assets/$key', source))
-{
-    if (!content.contains(file))
-        content.push(file);
-}
-		
+		var content = assetsTree.getFiles('$BASE_DIR$key', source);
 		for (k => e in content) {
-			var fileName = noExtension ? Path.withoutExtension(e) : e;
-			content[k] = addPath ? '$key$fileName' : fileName;
+			if (noExtension) e = Path.withoutExtension(e);
+			content[k] = addPath ? '$key$e' : e;
 		}
 		return content;
 	}
 
 	@:noCompletion public static function getFilenameFromLibFile(path:String) {
 		var file = new haxe.io.Path(path);
-		return file.file.startsWith("LIB_") ? file.dir + "." + file.ext : path;
+		if(file.file.startsWith("LIB_")) {
+			return file.dir + "." + file.ext;
+		}
+		return path;
 	}
 
 	@:noCompletion public static function getLibFromLibFile(path:String) {
 		var file = new haxe.io.Path(path);
-		return file.file.startsWith("LIB_") ? file.file.substr(4) : "";
+		if(file.file.startsWith("LIB_")) {
+			return file.file.substr(4);
+		}
+		return "";
 	}
 }
 
 class ScriptPathInfo {
 	public var file:String;
 	public var library:AssetLibrary;
+
 	public function new(file:String, library:AssetLibrary) {
 		this.file = file;
 		this.library = library;
