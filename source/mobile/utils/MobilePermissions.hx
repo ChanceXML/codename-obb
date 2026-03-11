@@ -1,10 +1,10 @@
 package mobile.utils;
 
 #if android
-import android.os.Build;
-import android.os.Environment;
-import android.Settings;
-import android.Permissions;
+import AndroidBuild;
+import AndroidEnvironment;
+import AndroidSettings;
+import AndroidPermissions;
 #end
 
 class AndroidHelper {
