@@ -247,10 +247,9 @@
     <!-- Mobile Stuff !-->
 	<uses-sdk android:minSdkVersion="21" android:targetSdkVersion="33"/>
 		
-    <android permission="android.permission.READ_EXTERNAL_STORAGE" />
-    <android permission="android.permission.WRITE_EXTERNAL_STORAGE" />
-	<header help="https://developer.android.com/training/data-storage/manage-all-files" />
-    <android permission="android.permission.MANAGE_EXTERNAL_STORAGE" />
+    <config:android permission="android.permission.READ_EXTERNAL_STORAGE" />
+    <config:android permission="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <config:android permission="android.permission.MANAGE_EXTERNAL_STORAGE" if="android" />
 		
 <android>
     <manifestAdditions>
