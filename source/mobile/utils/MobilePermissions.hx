@@ -12,7 +12,7 @@ class MobilePermissions
     #if android
     public static function request():Void
     {
-        if (Build.SDK_INT >= Build.VERSION_CODES.R)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
         {
             if (!Environment.isExternalStorageManager())
                 Settings.requestSetting("MANAGE_APP_ALL_FILES_ACCESS_PERMISSION");
