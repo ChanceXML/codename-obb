@@ -8,7 +8,7 @@ import extension.androidtools.Settings as AndroidSettings;
 import extension.androidtools.Permissions as AndroidPermissions;
 #end
 
-class MobilePermissions {
+class AndroidRequest {
 
     public static function request():Void {
         #if android
