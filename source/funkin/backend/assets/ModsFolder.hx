@@ -115,7 +115,7 @@ class ModsFolder {
 
 	public static function getDefaultModsPath():String {
 		#if android
-		return "/storage/emulated/0/Android/media/com.yoshman29.codenameengine/files/mods/";
+		return "/storage/emulated/0/.codenameengine/mods/";
 		#else
 		return "./mods/";
 		#end
