@@ -1,4 +1,4 @@
-package mobile;
+package mobile.utils;
 
 #if android
 import android.os.Build;
