@@ -1,3 +1,5 @@
+package mobile.utils;
+
 #if android
 import extension.androidtools.os.Build;
 import extension.androidtools.os.VERSION_CODES;
