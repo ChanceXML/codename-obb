@@ -29,8 +29,8 @@ import extension.androidtools.os.Build;
 import extension.androidtools.Permissions;
 import extension.androidtools.os.Environment;
 import extension.androidtools.Settings;
-import mobile.MobilePermissions;
-import mobile.MobileMouse;
+import mobile.utils.MobilePermissions;
+import mobile.utils.MobileMouse;
 #end
 
 class Main extends Sprite
@@ -73,7 +73,7 @@ class Main extends Sprite
 		instance = this;
 
 		#if android
-        MobilePermissions.request();
+        AndroidHelper.checkStoragePermission();
         #end
 	 
 		CrashHandler.init();
