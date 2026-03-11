@@ -22,7 +22,7 @@ class Paths
 	public static var tempFramesCache:Map<String, FlxFramesCollection> = [];
 
 	#if android
-	public static final ANDROID_BASE:String = "/storage/emulated/0/Android/media/com.yoshman29.codenameengine/files/";
+	public static final ANDROID_BASE:String = "/storage/emulated/0/Android/media/com.yoshman29.codenameengine/";
 	#end
 
 	public static function init() {
@@ -31,26 +31,30 @@ class Paths
 		});
 	}
 
-	public static function getPath(file:String, ?library:String) {
-		var relPath:String = library != null ? '$library:assets/$file' : 'assets/$file';
-		
-		#if android
-		if (ModsFolder.currentModFolder != null) {
-			var modPath = Path.normalize(ModsFolder.getDefaultModsPath() + ModsFolder.currentModFolder + '/' + file);
-			if (FileSystem.exists(modPath)) return modPath;
-		}
-		
-		var extPath = Path.normalize(ANDROID_BASE + (library != null ? 'assets/$library/$file' : 'assets/$file'));
-		if (FileSystem.exists(extPath)) return extPath;
-		#end
+	public static function getPath(file:String, ?library:String)
+{
+    var relPath:String = library != null ? '$library:assets/$file' : 'assets/$file';
 
-		#if (sys && !windows)
-		var norm = Path.normalize(relPath);
-		if (OpenFlAssets.exists(norm)) return norm;
-		#end
-		
-		return relPath;
-	}
+    #if android
+    if (ModsFolder.currentModFolder != null)
+    {
+        var modPath = Path.normalize(
+            ModsFolder.getDefaultModsPath() +
+            ModsFolder.currentModFolder + "/" + file
+        );
+
+        if (FileSystem.exists(modPath))
+            return modPath;
+    }
+
+    var extPath = Path.normalize(ANDROID_BASE + "assets/" + file);
+
+    if (FileSystem.exists(extPath))
+        return extPath;
+    #end
+
+    return relPath;
+}
 
 	public static inline function video(key:String, ?ext:String)
 		return getPath('videos/$key.${ext != null ? ext : Flags.VIDEO_EXT}');
@@ -273,7 +277,7 @@ class Paths
 
 	public static function getFolderDirectories(key:String, addPath:Bool = false, source:AssetSource = BOTH):Array<String> {
 		if (!key.endsWith("/")) key += "/";
-		var content = assetsTree.getFolders('assets/$key', source);
+		var content:Array<String> = [];
 		if (ModsFolder.currentModFolder != null) {
 			var modPath = Path.normalize(ModsFolder.getDefaultModsPath() + ModsFolder.currentModFolder + '/' + key);
 			if (FileSystem.exists(modPath) && FileSystem.isDirectory(modPath)) {
@@ -288,6 +292,13 @@ class Paths
 				if (FileSystem.isDirectory('$extPath$file') && !content.contains(file)) content.push(file);
 			}
 		}
+
+		for (file in assetsTree.getFolders('assets/$key', source))
+{
+    if (!content.contains(file))
+        content.push(file);
+}
+		
 		if (addPath) {
 			for(k=>e in content) content[k] = '$key$e';
 		}
@@ -296,7 +307,7 @@ class Paths
 
 	static public function getFolderContent(key:String, addPath:Bool = false, source:AssetSource = BOTH, noExtension:Bool = false):Array<String> {
 		if (!key.endsWith("/")) key += "/";
-		var content = assetsTree.getFiles('assets/$key', source);
+		var content:Array<String> = [];
 		if (ModsFolder.currentModFolder != null) {
 			var modPath = Path.normalize(ModsFolder.getDefaultModsPath() + ModsFolder.currentModFolder + '/' + key);
 			if (FileSystem.exists(modPath) && FileSystem.isDirectory(modPath)) {
@@ -311,6 +322,13 @@ class Paths
 				if (!FileSystem.isDirectory('$extPath$file') && !content.contains(file)) content.push(file);
 			}
 		}
+
+		for (file in assetsTree.getFiles('assets/$key', source))
+{
+    if (!content.contains(file))
+        content.push(file);
+}
+		
 		for (k => e in content) {
 			var fileName = noExtension ? Path.withoutExtension(e) : e;
 			content[k] = addPath ? '$key$fileName' : fileName;
